@@ -65,7 +65,7 @@ where
     }
 }
 
-impl<K, V, S> LockedHashMap<K, V, S> {
+impl<K, V, S1, S2> LockedHashMap<K, V, S1, S2> {
     /// Return the approximate total capacity of `LockedHashMap`.
     ///
     /// This tales time `O(div)`.
