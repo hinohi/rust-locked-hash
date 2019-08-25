@@ -43,6 +43,8 @@ where
 
     /// Create an empty `LockedHashMap` with specified lock-divide and capacity.
     ///
+    /// **panic**: `div == 0`
+    ///
     /// # Examples
     ///
     /// ```
@@ -54,6 +56,7 @@ where
         div: usize,
         capacity: usize,
     ) -> LockedHashMap<K, V, RandomState, RandomState> {
+        assert!(div > 0);
         Self::allocate(div, capacity, RandomState::new(), RandomState::new())
     }
 }
@@ -184,6 +187,8 @@ where
     ///
     /// View also [`with_hasher`].
     ///
+    /// **panic**: `div == 0`
+    ///
     /// [`with_hasher`]: #method.with_hasher
     #[inline]
     pub fn with_div_and_capacity_and_hasher(
@@ -192,6 +197,7 @@ where
         key_hash_builder: S1,
         map_hash_builder: S2,
     ) -> LockedHashMap<K, V, S1, S2> {
+        assert!(div > 0);
         Self::allocate(div, capacity, key_hash_builder, map_hash_builder)
     }
 
