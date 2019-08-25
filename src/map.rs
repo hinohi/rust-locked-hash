@@ -5,6 +5,9 @@ use std::sync::RwLock;
 
 use num_cpus;
 
+/// Locked Hash Map
+///
+///
 pub struct LockedHashMap<K, V, S1 = RandomState, S2 = RandomState> {
     key_hash_builder: S1,
     data: Vec<RwLock<HashMap<K, V, S2>>>,
@@ -19,7 +22,7 @@ where
 {
     /// Create an almost empty `LockedHashMap`.
     ///
-    /// The default lock-divided is `8`, it means `LockedHashMap` has
+    /// The default lock-divided is `256`, it means `LockedHashMap` has
     /// `cpus * 256` lock in data.
     ///
     /// # Examples
@@ -259,5 +262,61 @@ where
     {
         let map = self.data[self.key_pos(k)].read().unwrap();
         map.contains_key(k)
+    }
+}
+
+pub struct IntoIter<K, V, S> {
+    data: Vec<RwLock<HashMap<K, V, S>>>,
+    iter: std::vec::IntoIter<(K, V)>,
+}
+
+impl<K, V, S> Iterator for IntoIter<K, V, S> {
+    type Item = (K, V);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if let Some(v) = self.iter.next() {
+            Some(v)
+        } else {
+            while let Some(lock) = self.data.pop() {
+                self.iter = lock
+                    .into_inner()
+                    .unwrap()
+                    .drain()
+                    .collect::<Vec<_>>()
+                    .into_iter();
+                if let Some(v) = self.iter.next() {
+                    return Some(v);
+                }
+            }
+            None
+        }
+    }
+}
+
+impl<K, V, S1, S2> IntoIterator for LockedHashMap<K, V, S1, S2> {
+    type Item = (K, V);
+    type IntoIter = IntoIter<K, V, S2>;
+
+    /// Return an iterator that moves out of a map.
+    /// That Iterator visiting all key-value pairs.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use locked_hash::LockedHashMap;
+    ///
+    /// let map = LockedHashMap::new();
+    /// map.insert(1, "a");
+    /// let mut iter = map.into_iter();
+    /// assert_eq!(iter.next(), Some((1, "a")));
+    /// assert_eq!(iter.next(), None);
+    /// ```
+    #[inline]
+    fn into_iter(self) -> IntoIter<K, V, S2> {
+        IntoIter {
+            // TODO optimize
+            data: self.data,
+            iter: Vec::new().into_iter(),
+        }
     }
 }
