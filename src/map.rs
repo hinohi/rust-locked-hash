@@ -7,7 +7,8 @@ use num_cpus;
 
 /// Locked Hash Map
 ///
-///
+/// Allows easy-sharing of data in multiple threads
+/// using internal mutability.
 pub struct LockedHashMap<K, V, S1 = RandomState, S2 = RandomState> {
     key_hash_builder: S1,
     data: Vec<RwLock<HashMap<K, V, S2>>>,
