@@ -327,3 +327,36 @@ impl<K, V, S1, S2> IntoIterator for LockedHashMap<K, V, S1, S2> {
         }
     }
 }
+
+impl<K, V, S1, S2, S3> Into<HashMap<K, V, S3>> for LockedHashMap<K, V, S1, S2>
+where
+    K: Eq + Hash,
+    V: Clone,
+    S1: BuildHasher,
+    S2: BuildHasher,
+    S3: BuildHasher + Default,
+{
+    /// Convert into an `std::collections::HashMap`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use std::collections::HashMap;
+    /// use locked_hash::LockedHashMap;
+    ///
+    /// let map = LockedHashMap::new();
+    /// map.insert(1, "a");
+    /// map.insert(2, "b");
+    /// let mut h: HashMap<_, _> = map.into();
+    /// assert_eq!(h.get(&1), Some(&"a"));
+    /// assert_eq!(h.get(&3), None);
+    /// assert_eq!(h.len(), 2);
+    /// ```
+    fn into(self) -> HashMap<K, V, S3> {
+        let mut ret = HashMap::with_capacity_and_hasher(self.len(), Default::default());
+        for lock in self.data {
+            ret.extend(lock.into_inner().unwrap().drain());
+        }
+        ret
+    }
+}
